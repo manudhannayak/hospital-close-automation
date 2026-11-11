@@ -1,0 +1,65 @@
+# Month-end close. Runs early each month; close.schedule decides whether today is the 3rd business day.
+# On close day it builds the package, publishes it as a GitHub Release, and refreshes the dashboard.
+name: Month-end close
+
+on:
+  schedule:
+    - cron: "37 14 1-7 * *"     # 7:37 AM Arizona, days 1-7
+  workflow_dispatch:
+    inputs:
+      period:
+        description: "Close period YYYY-MM (blank = last month)"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      - name: Is today close day?
+        id: due
+        run: |
+          if [ -n "${{ github.event.inputs.period }}" ]; then P="${{ github.event.inputs.period }}";
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then P=$(PYTHONPATH=src python -c "from close.pipeline import last_closed_month; from close import load_settings; print(last_closed_month(load_settings()))");
+          else P=$(PYTHONPATH=src python -m close.schedule); fi
+          echo "period=$P" >> "$GITHUB_OUTPUT"; echo "Close period: ${P:-none today}"
+
+      - name: Tests
+        if: steps.due.outputs.period != ''
+        run: PYTHONPATH=src pytest -q
+
+      - name: Run close
+        if: steps.due.outputs.period != ''
+        run: PYTHONPATH=src python -m close.pipeline --period ${{ steps.due.outputs.period }}
+
+      - name: Commit package and refresh dashboard
+        if: steps.due.outputs.period != ''
+        run: |
+          git config user.name "bi-automation-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/ docs/
+          if git diff --cached --quiet; then echo "No changes"; else
+            git commit -m "Close package ${{ steps.due.outputs.period }}" && git push; fi
+
+      - name: Publish GitHub Release with the package
+        if: steps.due.outputs.period != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          P=${{ steps.due.outputs.period }}
+          D=docs/packs/$P
+          (cd $D && zip -qr ../department_packs_$P.zip departments)
+          NOTES=$(python -c "import json;d=json.load(open('$D/close.json'));print(d['narrative'])")
+          gh release delete "close-$P" -y --cleanup-tag 2>/dev/null || true
+          gh release create "close-$P" --title "$(date -d "$P-01" +'%B %Y') close" --notes "$NOTES" \
+            "$D/Close_Package_$P.xlsx" "$D/Executive_Summary_$P.pdf" "docs/packs/department_packs_$P.zip" "$D/distribution_manifest.csv"
+          rm docs/packs/department_packs_$P.zip

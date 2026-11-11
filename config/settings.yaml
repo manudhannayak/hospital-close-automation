@@ -1,0 +1,32 @@
+# Month-end close reporting automation - configuration
+
+organization: Desert Valley Health (fictional)
+history_start: 2025-01          # first month in the simulated ledger
+fiscal_year_start_month: 1
+timezone: America/Phoenix
+
+facilities:
+  N: North Campus
+  C: Central Campus
+  E: East Campus
+  W: West Campus
+
+# Departments (cost centers) repeated at every facility.
+# stat = the volume statistic that drives variable cost and revenue for the department
+departments:
+  "6010": {name: Med/Surg Nursing,  stat: patient_days,   type: revenue}
+  "6020": {name: Intensive Care,    stat: patient_days,   type: revenue}
+  "6100": {name: Emergency,         stat: ed_visits,      type: revenue}
+  "6200": {name: Surgical Services, stat: surgical_cases, type: revenue}
+  "6300": {name: Imaging,           stat: procedures,     type: revenue}
+  "6400": {name: Laboratory,        stat: tests,          type: revenue}
+  "6500": {name: Pharmacy,          stat: doses,          type: revenue}
+  "8000": {name: Administration,    stat: none,           type: overhead}
+
+materiality:
+  dollars: 50000        # flag a variance when it is at least this many dollars...
+  percent: 5            # ...and at least this % of budget
+
+distribution:
+  email_domain: desertvalleyhealth.example
+  send_mode: dry_run     # dry_run | smtp

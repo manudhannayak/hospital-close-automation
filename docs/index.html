@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Month-End Close | Budget vs Actual Command View</title>
+<meta name="description" content="Automated hospital month-end close: accounting controls, flexible-budget variance analysis, driver commentary and generated report packs.">
+<style>
+:root{--slate:#22303c;--slate2:#2f4050;--gold:#c9973b;--ink:#1b2229;--ink2:#4a5561;--muted:#7b8590;--line:#e3e6e9;--bg:#f5f4f1;
+--fav:#1a7f4b;--unfav:#b4342d;--neutral:#eef0f2}
+*{box-sizing:border-box}body{margin:0;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+a{color:#7a5a12}.top{background:var(--slate);color:#fff;border-bottom:3px solid var(--gold)}
+.top .in{max-width:1260px;margin:0 auto;padding:18px 24px;display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;justify-content:space-between}
+.brand small{display:block;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);font-weight:650}
+.brand b{font-size:21px;letter-spacing:-.01em}.brand span{display:block;font-size:12.5px;color:#b9c3cc}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+select{font:inherit;font-size:13px;padding:6px 10px;border-radius:6px;border:1px solid #4a5d6e;background:var(--slate2);color:#fff}
+.btn{font-size:12.5px;padding:6px 11px;border-radius:6px;background:var(--gold);color:#1b2229;text-decoration:none;font-weight:600}
+.btn.o{background:transparent;color:#e9dcc0;border:1px solid #6b5a33}
+.note{background:#fbf6ea;border-bottom:1px solid #eadbb8;color:#5c4710;font-size:12.5px}.note .in{max-width:1260px;margin:0 auto;padding:7px 24px}
+main{max-width:1260px;margin:0 auto;padding:16px 24px 50px}
+h2{font-size:16px;margin:26px 0 4px}.hint{color:var(--muted);font-size:12.5px;margin:0 0 10px}
+.card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.row{display:grid;gap:14px}.r2{grid-template-columns:7fr 5fr}.r2e{grid-template-columns:1fr 1fr}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}.chip{font-size:12px;padding:3px 10px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--ink2)}
+.chip b{color:var(--ink)}.chip.ok b{color:var(--fav)}.chip.warn b{color:#9a6400}.chip.bad b{color:var(--unfav)}
+.narr{white-space:pre-wrap;font-size:13.5px;line-height:1.6;border-left:4px solid var(--gold)}
+.facs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.fac{background:#fff;border:1px solid var(--line);border-radius:8px;padding:11px 13px}
+.fac .n{font-size:12.5px;color:var(--ink2);font-weight:600}.fac .v{font-size:22px;font-weight:680;font-variant-numeric:tabular-nums}.fac .m{font-size:12px;color:var(--muted)}
+.fav{color:var(--fav)}.unfav{color:var(--unfav)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:6px 7px;border-bottom:1px solid #eef0f2;text-align:left;vertical-align:top}
+th{font-size:11.5px;color:var(--ink2);font-weight:600;background:#f8f8f6}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.grid td.c{text-align:right;font-variant-numeric:tabular-nums;cursor:pointer;min-width:62px;border-left:2px solid #fff}
+.grid td.c.sel{outline:2px solid var(--slate);outline-offset:-2px}.grid td.fh{background:#f8f8f6;font-weight:650;font-size:12px;color:var(--ink2)}
+.flag{position:relative}.flag::after{content:"";position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:var(--slate)}
+.detail h3{margin:0 0 6px;font-size:14px}.detail .k{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:12.5px;margin:8px 0}
+.status{font-weight:650;font-size:11.5px}.PASS{color:var(--fav)}.WARN{color:#9a6400}.FAIL{color:var(--unfav)}
+.lib a{display:block;padding:6px 0;border-bottom:1px solid #f0f0ee}
+.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.step{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px}.step b{display:block;font-size:12.5px}.step span{font-size:11.5px;color:var(--ink2)}
+.pr{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.pri{background:#fffaf0;border:1px solid #f0dfb5;border-radius:8px;padding:10px 12px;font-size:12.5px}
+#tip{position:fixed;pointer-events:none;background:#1b2229;color:#fff;font-size:12px;line-height:1.45;padding:7px 9px;border-radius:6px;opacity:0;max-width:300px;z-index:30}
+footer{color:var(--muted);font-size:12px;margin-top:28px;line-height:1.6}.err{background:#fbe9e7;color:var(--unfav);padding:12px;border-radius:8px}
+@media(max-width:1000px){.r2,.r2e{grid-template-columns:1fr}.facs{grid-template-columns:repeat(2,1fr)}.flow,.pr{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="top"><div class="in"><div class="brand"><small>Month-end close automation</small><b id="org">Budget vs Actual</b><span id="sub"></span></div>
+<div class="ctl"><select id="period" aria-label="Close period"></select><span id="dl"></span></div></div></div>
+<div class="note"><div class="in"><b>Fictional health system, synthetic ledger.</b> Real hospital books are private; the general ledger, budget and statistics are simulated in ERP-extract format. The controls, variance engine, commentary and report generation are real and run on a schedule.</div></div>
+<main id="app"></main><div id="tip"></div>
+<script>
+const REPO = "https://github.com/manudhannayak/hospital-close-automation";
+const $ = s => document.querySelector(s), esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const m = v => (v < 0 ? "-" : "") + "$" + (Math.abs(v) >= 1e6 ? (Math.abs(v)/1e6).toFixed(2) + "M" : Math.round(Math.abs(v)/1e3).toLocaleString() + "K");
+const fv = v => v == null ? "n/a" : Math.abs(v) < 500 ? "–" : (v < 0 ? "(" : "") + "$" + Math.round(Math.abs(v)/1e3).toLocaleString() + "K" + (v < 0 ? ")" : "");
+const tip = $("#tip");
+function tips(r){ r.querySelectorAll("[data-tip]").forEach(el => { el.onmouseenter = e => { tip.innerHTML = el.dataset.tip; tip.style.opacity = 1; mv(e); }; el.onmousemove = mv; el.onmouseleave = () => tip.style.opacity = 0; }); }
+function mv(e){ tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + "px"; tip.style.top = Math.min(e.clientY + 14, innerHeight - tip.offsetHeight - 8) + "px"; }
+const LINES = ["Net Patient Revenue","Salaries & Wages","Contract Labor","Benefits","Supplies","Drugs","Purchased Services","Other Operating Expense","Operating Income"];
+const SHORT = {"Net Patient Revenue":"Net rev","Salaries & Wages":"Salaries","Contract Labor":"Contract labor","Benefits":"Benefits","Supplies":"Supplies","Drugs":"Drugs","Purchased Services":"Purch. svcs","Other Operating Expense":"Other","Operating Income":"Op. income"};
+let LIB, C, sel = null;
+
+fetch("library.json", {cache: "no-store"}).then(r => r.json()).then(l => { LIB = l;
+  $("#period").innerHTML = l.periods.map(p => `<option value="${p}">${new Date(p + "-15").toLocaleDateString(undefined,{month:"long",year:"numeric"})} close</option>`).join("");
+  $("#period").onchange = e => load(e.target.value); load(l.latest); })
+  .catch(e => $("#app").innerHTML = `<div class="err">Could not load the report library (${esc(e.message)}).</div>`);
+
+function load(p){ fetch(`packs/${p}/close.json`, {cache: "no-store"}).then(r => r.json()).then(c => { C = c; sel = null; render(); }); }
+
+function render(){
+  const p = C.period, base = `packs/${p}`;
+  $("#org").textContent = C.org.replace(" (fictional)", "") + " · " + C.label;
+  $("#sub").textContent = `Generated ${C.generated_at} by the scheduled close pipeline`;
+  $("#dl").innerHTML = `<a class="btn" href="${base}/Close_Package_${p}.xlsx">Excel pack</a> <a class="btn" href="${base}/Executive_Summary_${p}.pdf">PDF summary</a>
+    <a class="btn o" href="${REPO}/tree/main/docs/packs/${p}/departments" target="_blank" rel="noopener">32 dept packs ↗</a> <a class="btn o" href="${REPO}" target="_blank" rel="noopener">Code ↗</a>`;
+  const ctl = C.controls.counts, sys = Object.fromEntries(C.system_pl.map(r => [r.line, r])), oi = sys["Operating Income"], npr = sys["Net Patient Revenue"];
+  const pr = C.parallel_run;
+  $("#app").innerHTML = `
+  <div class="chips"><span class="chip ${ctl.FAIL ? "bad" : ctl.WARN ? "warn" : "ok"}">Close controls <b>${ctl.PASS} pass · ${ctl.WARN} review · ${ctl.FAIL} fail</b></span>
+   <span class="chip">Operating income <b class="${oi.variance >= 0 ? "fav" : "unfav"}">${m(oi.actual)}</b> vs ${m(oi.budget)} budget</span>
+   <span class="chip">Margin <b>${(100*oi.actual/npr.actual).toFixed(1)}%</b> vs ${(100*oi.budget/npr.budget).toFixed(1)}%</span>
+   <span class="chip"><b>${C.flags.length}</b> material variances explained</span><span class="chip"><b>${C.manifest_count}</b> report packs distributed</span>
+   ${pr ? `<span class="chip ok">Parallel run vs manual <b>${pr.matched}/${pr.compared} match · ${pr.unexplained} unexplained</b></span>` : ""}</div>
+  <div class="row r2"><div><h2>Budget to actual: what moved operating income</h2><p class="hint">Flexible-budget bridge. "Patient volume" is what more or fewer patients explain; every other bar is price, staffing or spending at actual volume.</p><div class="card" id="bridge"></div></div>
+  <div><h2>Close narrative</h2><p class="hint">Written by the pipeline from the variance drivers; same text as the PDF.</p><div class="card narr">${esc(C.narrative)}</div></div></div>
+  <h2>Facilities</h2><div class="facs" id="facs"></div>
+  <div class="row r2"><div><h2>Department variance grid</h2><p class="hint">Fav/(Unfav) vs budget in $K. Green = better than budget, red = worse. ● = material variance with commentary. Click any cell.</p><div class="card" style="padding:6px;overflow-x:auto" id="grid"></div></div>
+  <div><h2>Why</h2><p class="hint">Volume vs rate/efficiency split for the selected cell.</p><div class="card detail" id="detail"></div></div></div>
+  <h2>Material variances</h2><p class="hint">Flagged when ≥ $50K and ≥ 5% of budget. Commentary is generated from volumes, hours and unit costs.</p><div class="card" style="padding:0;overflow-x:auto"><table id="flags"></table></div>
+  <div class="row r2e"><div><h2>Close controls</h2><p class="hint">FAIL stops distribution. Mechanical fixes come with a proposed entry.</p><div class="card" id="ctl"></div></div>
+  <div><h2>Operating margin, 13 months</h2><p class="hint">By facility. Hover for values.</p><div class="card" id="trend"></div></div></div>
+  ${pr ? `<h2>Parallel run: automated close vs the old manual workbook (September 2026)</h2><p class="hint">Both processes ran for the same month before the manual one was retired. Every difference was traced to an error in the manual workbook.</p>
+   <div class="pr">${pr.items.map(i => `<div class="pri"><b>${esc(i.facility)} · ${esc(i.metric)} (${esc(i.type)})</b><br>Manual ${m(i.legacy)} vs automated ${m(i.automated)}<br><span style="color:#5c4710">${esc(i.cause)}</span></div>`).join("")}</div>
+   <p class="hint" style="margin-top:8px"><a href="packs/2026-09/Parallel_Run_Reconciliation_2026-09.xlsx">Download the reconciliation workbook</a></p>` : ""}
+  <div class="row r2e"><div><h2>Report library</h2><p class="hint">Every close the pipeline has produced.</p><div class="card lib" id="lib"></div></div>
+  <div><h2>How it works</h2><p class="hint">Runs on the 3rd business day of each month (GitHub Actions).</p><div class="flow" style="grid-template-columns:repeat(3,1fr)">
+   <div class="step"><b>1 · Extract</b><span>GL journal lines, statistics, budget</span></div><div class="step"><b>2 · Controls</b><span>Balance, duplicates, cutoff, mapping, misposting, fluctuation</span></div>
+   <div class="step"><b>3 · Flex budget</b><span>Volume vs rate/efficiency by line and department</span></div><div class="step"><b>4 · Commentary</b><span>Driver-based explanations from volumes, hours, unit costs</span></div>
+   <div class="step"><b>5 · Generate</b><span>Excel pack with live formulas, PDF, 32 department packs</span></div><div class="step"><b>6 · Distribute</b><span>Routing manifest per owner, release archive, this page</span></div></div></div></div>
+  <footer>Fictional health system and synthetic ledger. Not affiliated with any real hospital. Python · pandas · openpyxl · reportlab · GitHub Actions. <a href="${REPO}" target="_blank" rel="noopener">Source code</a>.</footer>`;
+  bridgeChart(); facs(); grid(); flags(); controls(); trend();
+  $("#lib").innerHTML = LIB.periods.map(q => `<a href="#" data-p="${q}">${new Date(q + "-15").toLocaleDateString(undefined,{month:"long",year:"numeric"})} close${q === p ? " (showing)" : ""}</a>`).join("");
+  document.querySelectorAll("#lib a").forEach(a => a.onclick = e => { e.preventDefault(); $("#period").value = a.dataset.p; load(a.dataset.p); });
+  const first = C.flags.find(f => !f.favorable); if (first) { sel = {cc: first.cost_center, line: first.line}; detail(); grid(); }
+}
+function bridgeChart(){
+  const s = C.bridge, W = 640, H = 300, pl = 54, pr = 10, pt = 14, pb = 62, n = s.length, bw = (W - pl - pr) / n * .62;
+  let run = 0; const bars = s.map(b => { if (b.kind === "total") { run = b.value; return {...b, y0: 0, y1: b.value}; } const y0 = run; run += b.value; return {...b, y0, y1: run}; });
+  const vals = bars.flatMap(b => [b.y0, b.y1]), lo = Math.min(0, ...vals), hi = Math.max(...vals) * 1.08;
+  const lo2 = Math.min(...bars.filter(b => b.kind === "delta").flatMap(b => [b.y0, b.y1])) * .8;
+  const base = Math.max(0, Math.min(lo2, s[s.length-1].value * .55));
+  const x = i => pl + i * (W - pl - pr) / n + ((W - pl - pr) / n - bw) / 2, y = v => pt + (1 - (v - base) / (hi - base)) * (H - pt - pb);
+  let g = `<svg viewBox="0 0 ${W} ${H}" width="100%">`;
+  for (let k = 0; k <= 4; k++) { const v = base + (hi - base) * k / 4; g += `<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="#eef0f2"/><text x="${pl-6}" y="${y(v)+4}" font-size="10.5" text-anchor="end" fill="#7b8590">${m(v)}</text>`; }
+  bars.forEach((b, i) => { const top = y(Math.max(b.y0, b.y1)), bot = y(Math.min(b.y0, b.y1));
+    const c = b.kind === "total" ? "#22303c" : b.value >= 0 ? "#1a7f4b" : "#b4342d", h = Math.max(1.5, bot - top);
+    const ty = b.kind === "total" ? y(b.y1) : bot;
+    g += `<rect x="${x(i)}" y="${b.kind === "total" ? y(b.y1) : top}" width="${bw}" height="${b.kind === "total" ? y(base) - y(b.y1) : h}" rx="3" fill="${c}" data-tip="<b>${esc(b.label)}</b><br>${b.kind === "total" ? m(b.value) : (b.value >= 0 ? "+" : "") + m(b.value) + " to operating income"}"/>`;
+    g += `<text x="${x(i) + bw/2}" y="${(b.kind === "total" ? y(b.y1) : top) - 5}" font-size="10.5" text-anchor="middle" fill="#1b2229" font-weight="600">${b.kind === "total" ? m(b.value) : (b.value >= 0 ? "+" : "") + m(b.value)}</text>`;
+    if (i < n - 1) g += `<line x1="${x(i) + bw}" x2="${x(i+1)}" y1="${y(b.y1)}" y2="${y(b.y1)}" stroke="#9aa3ad" stroke-dasharray="2 2"/>`;
+    const words = b.label.split(" "), mid = Math.ceil(words.length / 2);
+    [words.slice(0, mid).join(" "), words.slice(mid).join(" ")].filter(Boolean).forEach((t, k) => g += `<text x="${x(i) + bw/2}" y="${H - pb + 16 + k * 13}" font-size="10.5" text-anchor="middle" fill="#4a5561">${esc(t)}</text>`); });
+  $("#bridge").innerHTML = g + `</svg><p class="hint" style="margin:4px 0 0">Axis starts at ${m(base)} to make the moves readable.</p>`; tips($("#bridge"));
+}
+function facs(){
+  $("#facs").innerHTML = Object.entries(C.facilities).map(([f, name]) => { const r = Object.fromEntries(C.facility_pl.filter(x => x.facility === f).map(x => [x.line, x]));
+    const oi = r["Operating Income"], npr = r["Net Patient Revenue"], vr = oi.actual - oi.budget;
+    return `<div class="fac"><div class="n">${esc(name)}</div><div class="v ${vr >= 0 ? "fav" : "unfav"}">${m(oi.actual)}</div>
+      <div class="m">Operating income vs ${m(oi.budget)} budget (${vr >= 0 ? "+" : ""}${m(vr)})</div><div class="m">Margin ${(100*oi.actual/npr.actual).toFixed(1)}% vs ${(100*oi.budget/npr.budget).toFixed(1)}% · ${C.flags.filter(x => x.facility === f).length} flags</div></div>`; }).join("");
+}
+function grid(){
+  const cell = (cc, l) => C.grid.find(r => r.cost_center === cc && r.line === l);
+  const maxAbs = Math.max(...C.grid.filter(r => r.line !== "Operating Income").map(r => Math.abs(r.fav)), 1);
+  const flagged = new Set(C.flags.map(f => f.cost_center + "|" + f.line));
+  const color = v => { const t = Math.min(1, Math.abs(v) / (maxAbs * .5)); if (Math.abs(v) < 5000) return "#f7f7f5";
+    return v >= 0 ? `rgba(26,127,75,${.10 + .6 * t})` : `rgba(180,52,45,${.10 + .6 * t})`; };
+  let h = `<table class="grid"><tr><th>Department</th>${LINES.map(l => `<th class="n">${SHORT[l]}</th>`).join("")}</tr>`;
+  Object.entries(C.facilities).forEach(([f, name]) => {
+    h += `<tr><td class="fh" colspan="${LINES.length + 1}">${esc(name)}</td></tr>`;
+    Object.entries(C.departments).forEach(([cc, dn]) => { const id = `${f}-${cc}`;
+      h += `<tr><td style="white-space:nowrap">${esc(dn)}</td>${LINES.map(l => { const r = cell(id, l); if (!r || (Math.abs(r.actual) < 1 && Math.abs(r.budget) < 1)) return `<td class="c" style="color:#c3c9cf">–</td>`;
+        const isSel = sel && sel.cc === id && sel.line === l, strong = Math.abs(r.fav) > maxAbs * .3;
+        return `<td class="c${flagged.has(id + "|" + l) ? " flag" : ""}${isSel ? " sel" : ""}" data-cc="${id}" data-l="${esc(l)}" style="background:${color(r.fav)};color:${strong ? "#fff" : "#1b2229"}">${fv(r.fav)}</td>`; }).join("")}</tr>`; });
+  });
+  $("#grid").innerHTML = h + "</table>";
+  document.querySelectorAll("#grid td.c[data-cc]").forEach(td => td.onclick = () => { sel = {cc: td.dataset.cc, line: td.dataset.l}; grid(); detail(); });
+}
+function detail(){
+  if (!sel) { $("#detail").innerHTML = `<p class="hint">Click a cell in the grid.</p>`; return; }
+  const r = C.grid.find(x => x.cost_center === sel.cc && x.line === sel.line), f = C.flags.find(x => x.cost_center === sel.cc && x.line === sel.line);
+  const [fac, cc] = sel.cc.split("-"), rev = ["Net Patient Revenue", "Operating Income"].includes(sel.line), sg = rev ? 1 : -1;
+  $("#detail").innerHTML = `<h3>${esc(C.departments[cc])} · ${esc(C.facilities[fac])}</h3><div class="hint" style="margin:0">${esc(sel.line)} (${sel.cc})</div>
+   <div class="k"><span>Actual</span><b>${m(r.actual)}</b><span>Budget</span><span>${m(r.budget)}</span><span>Flexed budget (at actual volume)</span><span>${m(r.flexed_budget)}</span>
+   <span>Volume effect</span><span class="${sg*r.volume_variance >= 0 ? "fav" : "unfav"}">${fv(sg*r.volume_variance)}</span><span>Rate / efficiency effect</span><span class="${sg*r.rate_variance >= 0 ? "fav" : "unfav"}">${fv(sg*r.rate_variance)}</span>
+   <span><b>Total Fav/(Unfav)</b></span><b class="${r.fav >= 0 ? "fav" : "unfav"}">${fv(r.fav)}</b></div>
+   ${f ? `<div style="font-size:13px;line-height:1.55;border-top:1px solid #eee;padding-top:8px">${esc(f.commentary)}</div>` : `<p class="hint">Below the materiality threshold; no commentary required.</p>`}`;
+}
+function flags(){
+  $("#flags").innerHTML = `<tr><th>Facility</th><th>Department</th><th>Line</th><th class="n">Actual</th><th class="n">Budget</th><th class="n">Volume</th><th class="n">Rate / eff.</th><th class="n">Fav/(Unfav)</th><th>Commentary</th></tr>` +
+    C.flags.map(f => { const sg = ["Net Patient Revenue"].includes(f.line) ? 1 : -1;
+      return `<tr><td>${esc(f.facility_name)}</td><td>${esc(f.department)}</td><td>${esc(f.line)}</td><td class="n">${m(f.actual)}</td><td class="n">${m(f.budget)}</td>
+      <td class="n ${sg*f.volume_variance >= 0 ? "fav" : "unfav"}">${fv(sg*f.volume_variance)}</td><td class="n ${sg*f.rate_variance >= 0 ? "fav" : "unfav"}">${fv(sg*f.rate_variance)}</td>
+      <td class="n"><b class="${f.favorable ? "fav" : "unfav"}">${fv(sg*f.variance)}</b></td><td style="color:#4a5561;max-width:460px">${esc(f.commentary)}</td></tr>`; }).join("");
+}
+function controls(){
+  $("#ctl").innerHTML = `<table>${C.controls.results.map(c => `<tr><td style="white-space:nowrap">${esc(c.control.replace(/_/g," "))}</td><td class="status ${c.status}">${c.status === "WARN" ? "REVIEW" : c.status}</td><td style="color:#4a5561">${esc(c.detail)}</td></tr>`).join("")}</table>
+   ${C.reclass.length ? `<p class="hint" style="margin:10px 0 4px">Proposed correcting entry</p><table><tr><th>Account</th><th>Cost center</th><th class="n">Debit</th><th class="n">Credit</th></tr>${C.reclass.map(e => `<tr><td>${e.account}</td><td>${e.cost_center}</td><td class="n">${e.debit ? "$" + e.debit.toLocaleString() : ""}</td><td class="n">${e.credit ? "$" + e.credit.toLocaleString() : ""}</td></tr>`).join("")}</table><p class="hint">${esc(C.reclass[0].memo)}</p>` : ""}`;
+}
+function trend(){
+  const pal = {N:"#22303c", C:"#2f7dbf", E:"#c0661b", W:"#2a8a7a"}, months = [...new Set(C.kpi.map(k => k.period))].sort().slice(-13);
+  const W = 560, H = 230, pl = 34, pr = 92, pt = 10, pb = 26, vals = C.kpi.filter(k => months.includes(k.period)).map(k => k.operating_margin_pct);
+  const lo = Math.floor(Math.min(...vals) - 1), hi = Math.ceil(Math.max(...vals) + 1);
+  const x = i => pl + i * (W - pl - pr) / (months.length - 1), y = v => pt + (1 - (v - lo) / (hi - lo)) * (H - pt - pb);
+  let g = `<svg viewBox="0 0 ${W} ${H}" width="100%">`;
+  for (let v = lo; v <= hi; v += 2) g += `<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="#eef0f2"/><text x="${pl-5}" y="${y(v)+4}" font-size="10" text-anchor="end" fill="#7b8590">${v}%</text>`;
+  months.forEach((mo, i) => { if (i % 2 === 0) g += `<text x="${x(i)}" y="${H-8}" font-size="10" text-anchor="middle" fill="#7b8590">${mo.slice(2)}</text>`; });
+  const labs = [];
+  Object.entries(C.facilities).forEach(([f, name]) => { const pts = months.map(mo => (C.kpi.find(k => k.period === mo && k.facility === f) || {}).operating_margin_pct);
+    g += `<path d="${pts.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join("")}" fill="none" stroke="${pal[f]}" stroke-width="2"/>`;
+    pts.forEach((v, i) => g += `<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="${pal[f]}" stroke="#fff" data-tip="${esc(name)} · ${months[i]}<br>${v.toFixed(1)}% margin"/>`);
+    labs.push({name, c: pal[f], ty: y(pts[pts.length-1]) + 4}); });
+  labs.sort((a, b) => a.ty - b.ty); for (let i = 1; i < labs.length; i++) if (labs[i].ty - labs[i-1].ty < 12) labs[i].ty = labs[i-1].ty + 12;
+  labs.forEach(l => g += `<text x="${W - pr + 6}" y="${l.ty}" font-size="10.5" fill="${l.c}" font-weight="600">${esc(l.name)}</text>`);
+  $("#trend").innerHTML = g + "</svg>"; tips($("#trend"));
+}
+</script>
+</body>
+</html>

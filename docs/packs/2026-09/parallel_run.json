@@ -1,0 +1,40 @@
+{
+  "period": "2026-09",
+  "compared": 48,
+  "matched": 45,
+  "differences": 3,
+  "explained": 3,
+  "unexplained": 0,
+  "items": [
+    {
+      "facility": "Central Campus",
+      "metric": "Supplies",
+      "type": "Actual",
+      "legacy": 4742199,
+      "automated": 5070746,
+      "difference": -328547,
+      "cause": "Manual SUM range omitted C-6400 (difference equals that department exactly)",
+      "explained": true
+    },
+    {
+      "facility": "East Campus",
+      "metric": "Contract Labor",
+      "type": "Actual",
+      "legacy": 626800,
+      "automated": 662800,
+      "difference": -36000,
+      "cause": "Transposition error in manual entry (difference divisible by 9, same digits)",
+      "explained": true
+    },
+    {
+      "facility": "West Campus",
+      "metric": "Net Patient Revenue",
+      "type": "Budget",
+      "legacy": 11841114,
+      "automated": 12207334,
+      "difference": -366220,
+      "cause": "Legacy used a prior budget version (97.0% of approved budget)",
+      "explained": true
+    }
+  ]
+}
