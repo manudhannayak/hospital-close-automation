@@ -90,7 +90,7 @@ function render(){
   <div class="chips"><span class="chip ${ctl.FAIL ? "bad" : ctl.WARN ? "warn" : "ok"}">Close controls <b>${ctl.PASS} pass · ${ctl.WARN} review · ${ctl.FAIL} fail</b></span>
    <span class="chip">Operating income <b class="${oi.variance >= 0 ? "fav" : "unfav"}">${m(oi.actual)}</b> vs ${m(oi.budget)} budget</span>
    <span class="chip">Margin <b>${(100*oi.actual/npr.actual).toFixed(1)}%</b> vs ${(100*oi.budget/npr.budget).toFixed(1)}%</span>
-   <span class="chip"><b>${C.flags.length}</b> material variances explained</span><span class="chip"><b>${C.manifest_count}</b> report packs distributed</span>
+   <span class="chip"><b>${C.flags.length}</b> material variances explained</span><span class="chip"><b>${C.manifest_count}</b> report packs queued for email</span>
    ${pr ? `<span class="chip ok">Parallel run vs manual <b>${pr.matched}/${pr.compared} match · ${pr.unexplained} unexplained</b></span>` : ""}</div>
   ${C.run ? `<div class="run"><div class="hd"><b>Last automated run ✓ completed in ${C.run.total_seconds}s</b>
     <span>Trigger: ${esc(C.run.trigger)}</span><span>Started ${esc(C.run.started_at)}</span><span>Next scheduled run: <b style="font-size:12.5px">${new Date(C.run.next_run+"T12:00").toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</b></span>
