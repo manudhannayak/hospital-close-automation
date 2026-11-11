@@ -39,6 +39,13 @@ th{font-size:11.5px;color:var(--ink2);font-weight:600;background:#f8f8f6}td.n,th
 .flow{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.step{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px}.step b{display:block;font-size:12.5px}.step span{font-size:11.5px;color:var(--ink2)}
 .pr{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.pri{background:#fffaf0;border:1px solid #f0dfb5;border-radius:8px;padding:10px 12px;font-size:12.5px}
 #tip{position:fixed;pointer-events:none;background:#1b2229;color:#fff;font-size:12px;line-height:1.45;padding:7px 9px;border-radius:6px;opacity:0;max-width:300px;z-index:30}
+.run{margin-top:14px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--fav);border-radius:8px;padding:14px 16px}
+.run .hd{display:flex;flex-wrap:wrap;gap:6px 20px;align-items:baseline;margin-bottom:10px}.run .hd b{font-size:15px}.run .hd span{font-size:12.5px;color:var(--ink2)}
+.tl{list-style:none;margin:0;padding:0}.tl>li{display:grid;grid-template-columns:22px 150px 1fr 64px;gap:10px;padding:7px 0;border-top:1px solid #f0f0ee;font-size:13px;align-items:start}
+.tl .ck{width:18px;height:18px;border-radius:50%;background:var(--fav);color:#fff;font-size:11px;display:grid;place-items:center;margin-top:1px}
+.tl .nm{font-weight:650}.tl .t{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}.tl ul{margin:3px 0 0;padding-left:16px;color:var(--ink2);font-size:12px}
+.tl>li.on .ck{animation:pop .35s ease both}@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.tl>li.wait{opacity:.25}
 footer{color:var(--muted);font-size:12px;margin-top:28px;line-height:1.6}.err{background:#fbe9e7;color:var(--unfav);padding:12px;border-radius:8px}
 @media(max-width:1000px){.r2,.r2e{grid-template-columns:1fr}.facs{grid-template-columns:repeat(2,1fr)}.flow,.pr{grid-template-columns:1fr 1fr}}
 </style>
@@ -59,6 +66,10 @@ function mv(e){ tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offse
 const LINES = ["Net Patient Revenue","Salaries & Wages","Contract Labor","Benefits","Supplies","Drugs","Purchased Services","Other Operating Expense","Operating Income"];
 const SHORT = {"Net Patient Revenue":"Net rev","Salaries & Wages":"Salaries","Contract Labor":"Contract labor","Benefits":"Benefits","Supplies":"Supplies","Drugs":"Drugs","Purchased Services":"Purch. svcs","Other Operating Expense":"Other","Operating Income":"Op. income"};
 let LIB, C, sel = null;
+function replay(){ const items = [...document.querySelectorAll("#tl > li")]; items.forEach(li => li.className = "wait");
+  items.forEach((li, i) => setTimeout(() => li.className = "on", 450 * (i + 1))); }
+document.addEventListener("click", e => { if (e.target.id === "replay") { e.preventDefault(); replay(); } });
+
 
 fetch("library.json", {cache: "no-store"}).then(r => r.json()).then(l => { LIB = l;
   $("#period").innerHTML = l.periods.map(p => `<option value="${p}">${new Date(p + "-15").toLocaleDateString(undefined,{month:"long",year:"numeric"})} close</option>`).join("");
@@ -81,6 +92,10 @@ function render(){
    <span class="chip">Margin <b>${(100*oi.actual/npr.actual).toFixed(1)}%</b> vs ${(100*oi.budget/npr.budget).toFixed(1)}%</span>
    <span class="chip"><b>${C.flags.length}</b> material variances explained</span><span class="chip"><b>${C.manifest_count}</b> report packs distributed</span>
    ${pr ? `<span class="chip ok">Parallel run vs manual <b>${pr.matched}/${pr.compared} match · ${pr.unexplained} unexplained</b></span>` : ""}</div>
+  ${C.run ? `<div class="run"><div class="hd"><b>Last automated run ✓ completed in ${C.run.total_seconds}s</b>
+    <span>Trigger: ${esc(C.run.trigger)}</span><span>Started ${esc(C.run.started_at)}</span><span>Next scheduled run: <b style="font-size:12.5px">${new Date(C.run.next_run+"T12:00").toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</b></span>
+    <span>${C.run.run_url ? `<a href="${C.run.run_url}" target="_blank" rel="noopener">View this run's log ↗</a> · ` : ""}<a href="${REPO}/actions" target="_blank" rel="noopener">All runs ↗</a> · <a href="#" id="replay">Replay ▸</a></span></div>
+    <ol class="tl" id="tl">${C.run.steps.map((st, i) => `<li><span class="ck">✓</span><span class="nm">${i+1}. ${esc(st.step)}</span><span>${esc(st.detail)}${st.items.length ? `<ul>${st.items.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}</span><span class="t">${st.seconds.toFixed(2)}s</span></li>`).join("")}</ol></div>` : ""}
   <div class="row r2"><div><h2>Budget to actual: what moved operating income</h2><p class="hint">Flexible-budget bridge. "Patient volume" is what more or fewer patients explain; every other bar is price, staffing or spending at actual volume.</p><div class="card" id="bridge"></div></div>
   <div><h2>Close narrative</h2><p class="hint">Written by the pipeline from the variance drivers; same text as the PDF.</p><div class="card narr">${esc(C.narrative)}</div></div></div>
   <h2>Facilities</h2><div class="facs" id="facs"></div>

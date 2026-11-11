@@ -2,7 +2,7 @@
  "period": "2026-10",
  "label": "October 2026",
  "org": "Desert Valley Health (fictional)",
- "generated_at": "2026-11-11 17:58 UTC",
+ "generated_at": "2026-11-11 20:53 UTC",
  "narrative": "October 2026: operating income $3.49M vs $5.27M budget (-$1.78M); operating margin 5.3% vs 8.0% budget. Net patient revenue $65.47M (-1.0% vs budget).\nLargest unfavorable variances:\n- East Campus Med/Surg Nursing: Contract Labor $483K over budget (+439%), unfavorable. Patient days 2,372 vs 2,275 budget (+4.3%) accounts for $4K only. Agency hours 4,852 vs 900 budgeted: contract staff are covering employed vacancies (check employed Salaries & Wages, likely under budget).\n- North Campus Surgical Services: Supplies $448K over budget (+13%), unfavorable. Surgical cases 693 vs 718 budget (-3.5%) accounts for $120K only. Cost per surgical case $5,640 vs $4,820 budget (+17.0%): price or mix, not volume.\n- Central Campus Emergency: Net Patient Revenue $303K under budget (-8%), unfavorable. ED visits 5,748 vs 5,750 budget (flat) accounts for $1K only. $302K from net rate / payer mix rather than volume.\n- West Campus Emergency: Net Patient Revenue $301K under budget (-12%), unfavorable. ED visits 3,158 vs 3,538 budget (-10.7%) accounts for $263K of the variance.\nLargest favorable variances:\n- East Campus Med/Surg Nursing: Net Patient Revenue $196K (+8%), volume-driven.\n- East Campus Med/Surg Nursing: Salaries & Wages $191K (-16%), rate / efficiency-driven.\nClose controls: 5 passed, 3 need review, 0 failed. Review items: duplicate lines; account department fit; month over month fluctuation.",
  "controls": {
   "counts": {
@@ -5429,9 +5429,68 @@
  "manifest_count": 37,
  "run_info": {
   "period": "2026-10",
-  "generated_at": "2026-11-11 17:58 UTC",
+  "generated_at": "2026-11-11 20:53 UTC",
   "gl_rows": 435,
   "stat_rows": 84,
   "input_sha256": "f0f5f91aef4c4ad703bd0e4d0ad63f7ab4d9a260ad2805ec3163404f287246b6"
+ },
+ "run": {
+  "started_at": "2026-11-11 20:53:24 UTC",
+  "trigger": "Local run",
+  "run_url": null,
+  "total_seconds": 1.34,
+  "steps": [
+   {
+    "step": "Extract",
+    "detail": "Loaded 435 general-ledger lines and 84 patient-volume statistics for 2026-10",
+    "items": [
+     "0 new monthly extract file(s) picked up from the ERP drop folder"
+    ],
+    "seconds": 0.01
+   },
+   {
+    "step": "Controls",
+    "detail": "8 close checks: 5 passed, 3 need review, 0 failed",
+    "items": [
+     "WARN duplicate lines: 1 duplicated journal line(s) removed: AP-C-6200-202610",
+     "WARN account department fit: possible misposting, reclass proposed: AP-W-8000-INV88412 $186,400 in W-8000",
+     "WARN month over month fluctuation: E Contract Labor +333,051"
+    ],
+    "seconds": 0.02
+   },
+   {
+    "step": "Variance analysis",
+    "detail": "Operating income $3.49M vs $5.27M budget; 21 material variances (over $50K and 5%) flagged and explained",
+    "items": [
+     "Each variance split into patient volume vs price/efficiency using a flexible budget"
+    ],
+    "seconds": 0.09
+   },
+   {
+    "step": "Reports",
+    "detail": "Built Close_Package_2026-10.xlsx, Executive_Summary_2026-10.pdf and 32 department packs",
+    "items": [
+     "Excel packs use live formulas; PDF has the written close narrative"
+    ],
+    "seconds": 0.72
+   },
+   {
+    "step": "Distribution",
+    "detail": "37 recipients matched to their report in distribution_manifest.csv",
+    "items": [
+     "Send mode: dry_run (demo, no real emails)"
+    ],
+    "seconds": 0.42
+   },
+   {
+    "step": "Parallel run",
+    "detail": "Checked against the old manual workbook: 45/48 figures match, 0 unexplained",
+    "items": [
+     "3 differences traced to errors in the manual file"
+    ],
+    "seconds": 0.07
+   }
+  ],
+  "next_run": "2026-12-03"
  }
 }

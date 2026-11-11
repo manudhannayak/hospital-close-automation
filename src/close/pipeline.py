@@ -11,6 +11,7 @@ import hashlib
 import json
 import logging
 import os
+import time
 import sys
 from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo
@@ -73,18 +74,42 @@ def bridge(sys_v: pd.DataFrame) -> list[dict]:
     return steps
 
 
+def next_run(today):
+    from .schedule import nth_business_day
+    d = nth_business_day(today.year, today.month, 3)
+    if d <= today:
+        y, m = (today.year + 1, 1) if today.month == 12 else (today.year, today.month + 1)
+        d = nth_business_day(y, m, 3)
+    return d
+
+
 def run(period: str) -> int:
     s = load_settings()
     fac_names = s["facilities"]
     org = s["organization"]
-    write_extracts(period, s)            # simulated ERP drop; in production this is the ERP extract job
+    steps, t0 = [], time.perf_counter()
+    clock = {"t": t0}
+
+    def step(name, detail, items=None):
+        now = time.perf_counter()
+        steps.append({"step": name, "detail": detail, "items": items or [], "seconds": round(now - clock["t"], 2)})
+        clock["t"] = now
+        log.info("STEP %s %s: %s", len(steps), name.upper(), detail)
+        for i in items or []:
+            log.info("                 %s", i)
+
+    started = datetime.now(timezone.utc)
+    new = write_extracts(period, s)      # simulated ERP drop; in production this is the ERP extract job
     gl_raw, stats = load_period(period)
+    step("Extract", f"Loaded {len(gl_raw):,} general-ledger lines and {len(stats)} patient-volume statistics for {period}",
+         [f"{len(new)} new monthly extract file(s) picked up from the ERP drop folder"])
     prev = str(pd.Period(period, freq="M") - 1)
     prior_gl = clean(load_period(prev)[0]) if (EXTRACTS / f"gl_{prev}.csv").exists() else None
 
     gl, results, reclass = run_controls(gl_raw, stats, period, prior_gl, s)
     ctrl = summarize(results)
-    log.info("Controls %s", ctrl["counts"])
+    step("Controls", f'{len(ctrl["results"])} close checks: {ctrl["counts"]["PASS"]} passed, {ctrl["counts"]["WARN"]} need review, {ctrl["counts"]["FAIL"]} failed',
+         [f'{c["status"]} {c["control"].replace("_", " ")}: {c["detail"][:140]}' for c in ctrl["results"] if c["status"] != "PASS"])
     out = SITE / "packs" / period
     out.mkdir(parents=True, exist_ok=True)
     if not ctrl["passed"]:
@@ -101,6 +126,10 @@ def run(period: str) -> int:
     sys_pl = roll_up(v.assign(system="All"), ["system"])
     _, bstats = budget_for(period)
     flags = flag_variances(v, stats, bstats, s, fac_names, gl)
+    oi = sys_pl.set_index("line").loc["Operating Income"]
+    step("Variance analysis", f"Operating income ${oi.actual/1e6:.2f}M vs ${oi.budget/1e6:.2f}M budget; "
+         f"{len(flags)} material variances (over $50K and 5%) flagged and explained",
+         ["Each variance split into patient volume vs price/efficiency using a flexible budget"])
 
     hist = periods(str(pd.Period(period, freq="M") - 12), period)
     all_act = pd.concat([actuals(clean(load_period(p)[0])) for p in hist])
@@ -119,6 +148,8 @@ def run(period: str) -> int:
     pdf_summary(out / f"Executive_Summary_{period}.pdf", label(period), org, narrative, sys_pl, flags, kpi, fac_names, ctrl, out)
     (out / "margin_trend.png").unlink(missing_ok=True)
 
+    step("Reports", f"Built {sys_file.name}, Executive_Summary_{period}.pdf and "
+         f"{len(s['departments']) * len(fac_names)} department packs", ["Excel packs use live formulas; PDF has the written close narrative"])
     dept_dir = out / "departments"
     dept_dir.mkdir(exist_ok=True)
     manifest = []
@@ -143,6 +174,8 @@ def run(period: str) -> int:
         w.writeheader()
         w.writerows(manifest)
 
+    step("Distribution", f"{len(manifest)} recipients matched to their report in distribution_manifest.csv",
+         [f"Send mode: {s['distribution']['send_mode']} (demo, no real emails)"])
     # Parallel run against the legacy manual workbook (September 2026 was run both ways)
     sep = "2026-09"
     if period >= sep:
@@ -150,6 +183,8 @@ def run(period: str) -> int:
         sv = variance_table(sep, actuals(clean(sg)), sst, None, s)
         sv["facility"] = sv.cost_center.str[0]
         parallel = reconcile(roll_up(sv, ["facility"]), sv, fac_names, SITE / "packs" / sep)
+        step("Parallel run", f"Checked against the old manual workbook: {parallel['matched']}/{parallel['compared']} figures match, "
+             f"{parallel['unexplained']} unexplained", [f"{parallel['differences']} differences traced to errors in the manual file"])
     else:
         parallel = None
 
@@ -167,12 +202,18 @@ def run(period: str) -> int:
         "flags": flags.round(1).to_dict("records"), "kpi": kpi.round(2).to_dict("records"),
         "facilities": fac_names, "departments": {k: v_["name"] for k, v_ in s["departments"].items()},
         "parallel_run": parallel, "manifest_count": len(manifest), "run_info": run_info,
+        "run": {"started_at": started.strftime("%Y-%m-%d %H:%M:%S UTC"),
+                "trigger": {"schedule": "Scheduled (3rd business day of the month)", "workflow_dispatch": "Manual re-run"}.get(
+                    os.environ.get("GITHUB_EVENT_NAME", ""), "Local run"),
+                "run_url": (f'{os.environ["GITHUB_SERVER_URL"]}/{os.environ["GITHUB_REPOSITORY"]}/actions/runs/{os.environ["GITHUB_RUN_ID"]}'
+                            if os.environ.get("GITHUB_RUN_ID") else None),
+                "total_seconds": round(time.perf_counter() - t0, 2), "steps": steps,
+                "next_run": str(next_run(started.date()))},
     }
     (out / "close.json").write_text(json.dumps(_clean(site), default=float, indent=1, allow_nan=False))
     lib = sorted([p.name for p in (SITE / "packs").iterdir() if (p / "close.json").exists()], reverse=True)
     (SITE / "library.json").write_text(json.dumps({"periods": lib, "latest": lib[0] if lib else None}))
-    log.info("\n%s", narrative)
-    log.info("Wrote %s department packs, system pack, PDF; %s recipients queued", len(s["departments"]) * len(fac_names), len(manifest))
+    log.info("DONE. Dashboard data refreshed (docs/library.json, docs/packs/%s/close.json)", period)
     return 0
 
 
